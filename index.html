@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#673ab7" />
+<title>Health Tracker</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%9C%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+
+<!-- ============== APP HEADER (Google-Forms style banner) ============== -->
+<header class="banner">
+  <div class="banner-inner">
+    <h1>Health Tracker</h1>
+    <p>Carbs, protein, weight &amp; fasting blood sugar</p>
+  </div>
+</header>
+
+<!-- ============== TAB NAV ============== -->
+<nav class="tabs" role="tablist">
+  <button class="tab active" data-tab="entry"   role="tab" aria-selected="true">Add entry</button>
+  <button class="tab"        data-tab="history" role="tab">History</button>
+  <button class="tab"        data-tab="stats"   role="tab">Stats</button>
+  <button class="tab"        data-tab="data"    role="tab">Data</button>
+</nav>
+
+<main>
+
+<!-- ============== ENTRY TAB ============== -->
+<section id="tab-entry" class="tab-panel active">
+  <form id="entry-form" novalidate>
+
+    <!-- Date -->
+    <div class="card">
+      <label class="q" for="f-date">Date <span class="req">*</span></label>
+      <input type="date" id="f-date" name="date" required />
+    </div>
+
+    <!-- Weight -->
+    <div class="card">
+      <label class="q" for="f-weight">Morning weight</label>
+      <p class="help">In pounds (lbs). Leave blank if you didn't weigh today.</p>
+      <div class="input-row">
+        <input type="number" inputmode="decimal" step="0.1" min="0" id="f-weight" name="weight" placeholder="e.g. 195.4" />
+        <span class="suffix">lbs</span>
+      </div>
+    </div>
+
+    <!-- Fasting BG -->
+    <div class="card">
+      <label class="q" for="f-bg">Fasting blood sugar</label>
+      <p class="help">Taken first thing in the morning, before food/drink. mg/dL.</p>
+      <div class="input-row">
+        <input type="number" inputmode="numeric" step="1" min="0" id="f-bg" name="bg" placeholder="e.g. 105" />
+        <span class="suffix">mg/dL</span>
+      </div>
+    </div>
+
+    <!-- Meals (4 mini cards inside one section) -->
+    <div class="card meal-card meal-breakfast">
+      <h3 class="meal-title">Breakfast</h3>
+      <div class="meal-grid">
+        <div>
+          <label class="q-sm" for="f-bc">Carbs</label>
+          <div class="input-row">
+            <input type="number" inputmode="numeric" step="1" min="0" id="f-bc" name="breakfast_carbs" placeholder="g" />
+            <span class="suffix">g</span>
+          </div>
+        </div>
+        <div>
+          <label class="q-sm" for="f-bp">Protein</label>
+          <div class="input-row">
+            <input type="number" inputmode="numeric" step="1" min="0" id="f-bp" name="breakfast_protein" placeholder="g" />
+            <span class="suffix">g</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card meal-card meal-lunch">
+      <h3 class="meal-title">Lunch</h3>
+      <div class="meal-grid">
+        <div>
+          <label class="q-sm" for="f-lc">Carbs</label>
+          <div class="input-row">
+            <input type="number" inputmode="numeric" step="1" min="0" id="f-lc" name="lunch_carbs" placeholder="g" />
+            <span class="suffix">g</span>
+          </div>
+        </div>
+        <div>
+          <label class="q-sm" for="f-lp">Protein</label>
+          <div class="input-row">
+            <input type="number" inputmode="numeric" step="1" min="0" id="f-lp" name="lunch_protein" placeholder="g" />
+            <span class="suffix">g</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card meal-card meal-dinner">
+      <h3 class="meal-title">Dinner</h3>
+      <div class="meal-grid">
+        <div>
+          <label class="q-sm" for="f-dc">Carbs</label>
+          <div class="input-row">
+            <input type="number" inputmode="numeric" step="1" min="0" id="f-dc" name="dinner_carbs" placeholder="g" />
+            <span class="suffix">g</span>
+          </div>
+        </div>
+        <div>
+          <label class="q-sm" for="f-dp">Protein</label>
+          <div class="input-row">
+            <input type="number" inputmode="numeric" step="1" min="0" id="f-dp" name="dinner_protein" placeholder="g" />
+            <span class="suffix">g</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card meal-card meal-snacks">
+      <h3 class="meal-title">Snacks</h3>
+      <p class="help">Combine all snacks for the day.</p>
+      <div class="meal-grid">
+        <div>
+          <label class="q-sm" for="f-sc">Carbs</label>
+          <div class="input-row">
+            <input type="number" inputmode="numeric" step="1" min="0" id="f-sc" name="snacks_carbs" placeholder="g" />
+            <span class="suffix">g</span>
+          </div>
+        </div>
+        <div>
+          <label class="q-sm" for="f-sp">Protein</label>
+          <div class="input-row">
+            <input type="number" inputmode="numeric" step="1" min="0" id="f-sp" name="snacks_protein" placeholder="g" />
+            <span class="suffix">g</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live totals -->
+    <div class="card totals-card">
+      <div class="totals">
+        <div>
+          <span class="totals-label">Total carbs</span>
+          <span class="totals-num" id="total-carbs">0</span>
+          <span class="totals-unit">g</span>
+        </div>
+        <div>
+          <span class="totals-label">Total protein</span>
+          <span class="totals-num" id="total-protein">0</span>
+          <span class="totals-unit">g</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="card">
+      <label class="q" for="f-notes">Notes</label>
+      <textarea id="f-notes" name="notes" rows="3" placeholder="Meals, mood, exercise, anything to remember..."></textarea>
+    </div>
+
+    <!-- Submit -->
+    <div class="actions">
+      <button type="submit" class="btn-primary" id="submit-btn">Save entry</button>
+      <button type="button" class="btn-link" id="clear-btn">Clear form</button>
+    </div>
+
+    <p class="footer-note">Saved locally on this device — your data never leaves your browser.</p>
+  </form>
+
+  <div id="toast" class="toast" hidden></div>
+</section>
+
+<!-- ============== HISTORY TAB ============== -->
+<section id="tab-history" class="tab-panel">
+  <div class="card">
+    <h2>History</h2>
+    <p class="help">Most recent entries first. Click an entry to edit or delete it.</p>
+    <div id="history-list" class="history-list">
+      <p class="empty">No entries yet — add one in the <strong>Add entry</strong> tab.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== STATS TAB ============== -->
+<section id="tab-stats" class="tab-panel">
+  <div class="card">
+    <h2>Last 7 days</h2>
+    <div id="stats-7" class="stats-grid">
+      <p class="empty">No entries yet.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Last 30 days</h2>
+    <div id="stats-30" class="stats-grid">
+      <p class="empty">No entries yet.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Weight trend</h2>
+    <p class="help" id="trend-help">Add a few weight entries to see your trend.</p>
+    <div class="chart-wrap"><canvas id="weight-chart" height="160"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>Fasting BG trend</h2>
+    <div class="chart-wrap"><canvas id="bg-chart" height="160"></canvas></div>
+  </div>
+</section>
+
+<!-- ============== DATA TAB ============== -->
+<section id="tab-data" class="tab-panel">
+  <div class="card">
+    <h2>Backup &amp; restore</h2>
+    <p class="help">Your entries live in this browser's local storage. Export regularly so you don't lose them if you clear browser data or switch devices.</p>
+    <div class="data-actions">
+      <button class="btn-primary" id="export-csv">Export CSV</button>
+      <button class="btn-secondary" id="export-json">Export JSON</button>
+      <label class="btn-secondary file-btn">
+        Import CSV / JSON
+        <input type="file" id="import-file" accept=".csv,.json,text/csv,application/json" hidden />
+      </label>
+    </div>
+  </div>
+  <div class="card danger">
+    <h2>Danger zone</h2>
+    <p class="help">Delete every entry stored in this browser. Cannot be undone.</p>
+    <button class="btn-danger" id="wipe-data">Delete all entries</button>
+  </div>
+  <div class="card">
+    <h2>About</h2>
+    <p class="help">
+      Single-page app, no backend. Data is stored in <code>localStorage</code>
+      under the key <code>healthTracker.entries</code>. Works offline once loaded.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
