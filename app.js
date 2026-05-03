@@ -331,7 +331,7 @@ function toggleDetail(itemEl, e) {
     <div class="row"><span>Lunch</span><span>${n(e.lunch_carbs)}g C / ${n(e.lunch_protein)}g P</span></div>
     <div class="row"><span>Dinner</span><span>${n(e.dinner_carbs)}g C / ${n(e.dinner_protein)}g P</span></div>
     <div class="row"><span>Snacks</span><span>${n(e.snacks_carbs)}g C / ${n(e.snacks_protein)}g P</span></div>
-    <div class="row"><strong><span>Total</span><span>${sumCarbs(e)}g C / ${sumProtein(e)}g P</span></strong></div>
+    <div class="row total-row"><span><strong>Total</strong></span><span><strong>${sumCarbs(e)}g C / ${sumProtein(e)}g P</strong></span></div>
     <div class="row"><span>Had a drink</span><span>${e.had_drink ? 'Yes' : 'No'}</span></div>
     <div class="row"><span>Meds taken</span><span>${e.meds_taken ? 'Yes' : 'No'}</span></div>
     <div class="row"><span>72 oz water</span><span>${e.water_72oz ? 'Yes' : 'No'}</span></div>
