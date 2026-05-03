@@ -32,9 +32,78 @@ Health_tracker/
 └── README.md            ← this file
 ```
 
-## GitHub sync setup
+---
 
-The app can write your health data directly to `Health_Tracker.xlsx` in this repo on every save. This is what enables cross-device sync — your phone and desktop both read and write the same file.
+## Architecture
+
+### Data flow — save cycle
+
+```mermaid
+flowchart TD
+    A([Open App]) --> B{GitHub token\nstored in browser?}
+    B -->|Yes| C[Fetch Health_Tracker.xlsx\nfrom GitHub API]
+    B -->|No| D[Load from\nlocalStorage cache]
+    C --> E[Sync entries\ninto localStorage]
+    E --> F([Form ready])
+    D --> F
+    F --> G[Fill out daily form]
+    G --> H([Hit Save])
+    H --> I[Write to localStorage]
+    I --> J{GitHub\nconnected?}
+    J -->|Yes| K[Encode xlsx\nand PUT to GitHub API]
+    J -->|No| L([Browser only\nno cross-device sync])
+    K --> M([New commit in repo\nHealth_Tracker.xlsx updated])
+```
+
+### Multi-device sync
+
+```mermaid
+flowchart LR
+    subgraph Phone["📱 Phone"]
+        P[Health Tracker App]
+    end
+    subgraph Desktop["💻 Desktop"]
+        D[Health Tracker App]
+    end
+    subgraph Repo["🐙 GitHub Repo"]
+        X[Health_Tracker.xlsx]
+    end
+
+    P -- save → commit --> X
+    D -- save → commit --> X
+    X -- read on load --> P
+    X -- read on load --> D
+```
+
+### GitHub token setup
+
+```mermaid
+sequenceDiagram
+    actor You
+    participant GH as GitHub Settings
+    participant App as Health Tracker App
+    participant API as GitHub API
+
+    You->>GH: Create fine-grained token\nContents: Read & Write on this repo
+    GH-->>You: github_pat_…
+
+    You->>App: Data tab → paste token → Connect
+    App->>API: GET /repos/…/Health_Tracker.xlsx
+    API-->>App: Base64 file content + SHA
+    App->>App: Parse xlsx, load entries into form
+    App-->>You: ● Connected to GitHub
+
+    Note over App,API: Every save from this point on
+
+    You->>App: Fill form → Save entry
+    App->>API: PUT /repos/…/Health_Tracker.xlsx\nupdated content + current SHA
+    API-->>App: New SHA stored in memory
+    API-->>GH: New commit created in repo
+```
+
+---
+
+## GitHub sync setup
 
 ### 1 — Create a Personal Access Token
 
@@ -56,9 +125,11 @@ The token is stored in your browser only — it is never written to the repo. On
 
 ### Using on multiple devices
 
-Repeat step 2 on each device (phone, second computer, etc.) — paste the same token once per browser. All devices will share the same data through the repo file.
+Repeat step 2 on each device (phone, second computer, etc.) — paste the same token once per browser. All devices share the same data through the repo file.
 
 > **Note:** If two devices save at almost exactly the same time, the second save will show a toast error ("Failed: sha"). Just hit Save again — it will re-read the latest file and succeed.
+
+---
 
 ## GitHub Pages setup
 
@@ -69,6 +140,8 @@ If you fork this repo and want to host your own copy:
 3. Branch: `main`, folder: `/ (root)` → **Save**
 4. Your app will be live at `https://<your-username>.github.io/<your-repo-name>/` within a minute
 
+---
+
 ## Using the app
 
 | Tab | What it does |
@@ -78,13 +151,28 @@ If you fork this repo and want to host your own copy:
 | **Stats** | Auto-updating averages for the last 7 and 30 days, plus weight and fasting BG trend charts. |
 | **Data** | GitHub sync connection, CSV/JSON export and import, and the danger-zone wipe button. |
 
+---
+
 ## Where is my data?
+
+```mermaid
+flowchart LR
+    subgraph Browser["🌐 Your Browser"]
+        LS[localStorage\nhealthTracker.entries]
+    end
+    subgraph Repo["🐙 GitHub Repo"]
+        XLSX[Health_Tracker.xlsx]
+    end
+
+    LS <-->|sync on connect\n& every save| XLSX
+    LS -->|fallback if\nnot connected| LS
+```
 
 **Primary:** `Health_Tracker.xlsx` in this repo (when GitHub sync is connected).
 
-**Cache/fallback:** Your browser's `localStorage` under the key `healthTracker.entries`. The app reads from localStorage on load and writes to both localStorage and the xlsx on every save.
+**Cache / fallback:** Browser `localStorage` under the key `healthTracker.entries`. The app writes to both on every save. If you go offline or disconnect GitHub sync, the app continues working from the local cache.
 
-If you disconnect from GitHub sync, entries remain in localStorage and the app continues to work — you just lose cross-device sync until you reconnect.
+---
 
 ## Customizing
 
@@ -92,6 +180,8 @@ If you disconnect from GitHub sync, entries remain in localStorage and the app c
 - **Meal colors:** The colored left bars on meal cards are set by `.meal-breakfast::before`, `.meal-lunch::before`, etc. in `styles.css`.
 - **Units:** Labels are in `index.html` — values are stored as plain numbers, no conversion is applied. Edit the suffix spans to switch to kg or mmol/L.
 - **New field:** Add it to (1) the form in `index.html`, (2) the `FIELDS` array in `app.js`, (3) `entriesToRows` / `rowsToEntries` in `app.js` for xlsx sync, and (4) the CSV export headers.
+
+---
 
 ## License
 
