@@ -4,7 +4,7 @@ A Google-Forms-style daily health logging web app hosted free on **GitHub Pages*
 
 ## Features
 
-- Daily form: weight, fasting blood sugar, meals (carbs + protein), snacks, had a drink, meds taken, exercise
+- Daily form: weight, fasting blood sugar, meals (carbs + protein), snacks, had a drink, meds taken, 72 oz water, exercise
 - Cards auto-collapse after saving so the form stays clean — tap the header to expand any section
 - Dark mode by default with a light/dark toggle in the header
 - History view with expandable detail, edit, and delete
