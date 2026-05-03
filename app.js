@@ -10,6 +10,7 @@ const FIELDS = [
   'snacks_carbs',    'snacks_protein',
   'had_drink',
   'meds_taken',
+  'water_72oz',
   'exercised', 'exercise_notes',
   'notes'
 ];
@@ -333,6 +334,7 @@ function toggleDetail(itemEl, e) {
     <div class="row"><strong><span>Total</span><span>${sumCarbs(e)}g C / ${sumProtein(e)}g P</span></strong></div>
     <div class="row"><span>Had a drink</span><span>${e.had_drink ? 'Yes' : 'No'}</span></div>
     <div class="row"><span>Meds taken</span><span>${e.meds_taken ? 'Yes' : 'No'}</span></div>
+    <div class="row"><span>72 oz water</span><span>${e.water_72oz ? 'Yes' : 'No'}</span></div>
     <div class="row"><span>Exercised</span><span>${e.exercised ? 'Yes' : 'No'}</span></div>
     ${e.exercise_notes ? `<div class="row" style="display:block"><span>Exercise</span><div style="margin-top:4px;color:#202124">${escapeHtml(e.exercise_notes)}</div></div>` : ''}
     ${e.notes ? `<div class="row" style="display:block"><span>Notes</span><div style="margin-top:4px;color:#202124">${escapeHtml(e.notes)}</div></div>` : ''}
@@ -522,6 +524,7 @@ function exportCSV() {
     'total_carbs_g','total_protein_g',
     'had_drink',
     'meds_taken',
+    'water_72oz',
     'exercised', 'exercise_notes',
     'notes'
   ];
@@ -541,6 +544,7 @@ function exportCSV() {
     sumProtein(e),
     e.had_drink ? 'yes' : 'no',
     e.meds_taken ? 'yes' : 'no',
+    e.water_72oz ? 'yes' : 'no',
     e.exercised ? 'yes' : 'no',
     csvEscape(e.exercise_notes || ''),
     csvEscape(e.notes || '')
@@ -681,6 +685,7 @@ function rowsToEntries(rows) {
     snacks_protein:    r.snacks_protein_g    !== '' && r.snacks_protein_g    != null ? parseFloat(r.snacks_protein_g)    : null,
     had_drink:  r.had_drink  === 'yes' || r.had_drink  === true,
     meds_taken: r.meds_taken === 'yes' || r.meds_taken === true,
+    water_72oz: r.water_72oz === 'yes' || r.water_72oz === true,
     exercised:  r.exercised  === 'yes' || r.exercised  === true,
     exercise_notes: r.exercise_notes || '',
     notes: r.notes || ''
@@ -704,6 +709,7 @@ function entriesToRows(entries) {
     total_protein_g:      sumProtein(e),
     had_drink:            e.had_drink  ? 'yes' : 'no',
     meds_taken:           e.meds_taken ? 'yes' : 'no',
+    water_72oz:           e.water_72oz ? 'yes' : 'no',
     exercised:            e.exercised  ? 'yes' : 'no',
     exercise_notes:       e.exercise_notes || '',
     notes:                e.notes || ''
