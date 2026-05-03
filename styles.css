@@ -83,15 +83,15 @@ body {
 
 /* ===== Banner ===== */
 .banner {
-  background: linear-gradient(135deg, #673ab7 0%, #5e35b1 100%);
+  background: linear-gradient(135deg, #1a0a30 0%, #100520 100%);
   color: #fff;
   padding: 28px 16px 22px;
 }
 .banner-inner {
   max-width: 640px;
   margin: 0 auto;
-  border-top: 10px solid #4527a0;
-  background: linear-gradient(135deg, #673ab7 0%, #5e35b1 100%);
+  border-top: 10px solid #0a0318;
+  background: linear-gradient(135deg, #1a0a30 0%, #100520 100%);
   border-radius: 0;
   display: flex;
   align-items: flex-start;
@@ -241,6 +241,30 @@ main {
 }
 .meal-card.collapsed .meal-chevron { transform: rotate(-90deg); }
 .meal-card.collapsed .meal-header { padding-bottom: 0; }
+
+/* collapsible vital cards (weight, BG) */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0 0 12px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+}
+.card-header:hover .q { color: var(--accent); }
+.card-header .card-summary {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-sub);
+  font-weight: 400;
+}
+.collapsible-card.collapsed .card-header { padding-bottom: 0; }
+.collapsible-card.collapsed .meal-chevron { transform: rotate(-90deg); }
 
 /* exercise detail (hidden until checkbox checked) */
 .exercise-detail { display: none; }

@@ -42,22 +42,34 @@
     </div>
 
     <!-- Weight -->
-    <div class="card">
-      <label class="q" for="f-weight">Morning weight</label>
-      <p class="help">In pounds (lbs). Leave blank if you didn't weigh today.</p>
-      <div class="input-row">
-        <input type="number" inputmode="decimal" step="0.1" min="0" id="f-weight" name="weight" placeholder="e.g. 195.4" />
-        <span class="suffix">lbs</span>
+    <div class="card collapsible-card" id="card-weight">
+      <button type="button" class="card-header">
+        <span class="q">Morning weight</span>
+        <span class="card-summary" id="summary-weight"></span>
+        <span class="meal-chevron">▾</span>
+      </button>
+      <div class="card-body">
+        <p class="help">In pounds (lbs). Leave blank if you didn't weigh today.</p>
+        <div class="input-row">
+          <input type="number" inputmode="decimal" step="0.1" min="0" id="f-weight" name="weight" placeholder="e.g. 195.4" />
+          <span class="suffix">lbs</span>
+        </div>
       </div>
     </div>
 
     <!-- Fasting BG -->
-    <div class="card">
-      <label class="q" for="f-bg">Fasting blood sugar</label>
-      <p class="help">Taken first thing in the morning, before food/drink. mg/dL.</p>
-      <div class="input-row">
-        <input type="number" inputmode="numeric" step="1" min="0" id="f-bg" name="bg" placeholder="e.g. 105" />
-        <span class="suffix">mg/dL</span>
+    <div class="card collapsible-card" id="card-bg">
+      <button type="button" class="card-header">
+        <span class="q">Fasting blood sugar</span>
+        <span class="card-summary" id="summary-bg"></span>
+        <span class="meal-chevron">▾</span>
+      </button>
+      <div class="card-body">
+        <p class="help">Taken first thing in the morning, before food/drink. mg/dL.</p>
+        <div class="input-row">
+          <input type="number" inputmode="numeric" step="1" min="0" id="f-bg" name="bg" placeholder="e.g. 105" />
+          <span class="suffix">mg/dL</span>
+        </div>
       </div>
     </div>
 
@@ -140,22 +152,28 @@
       </div>
     </div>
 
-    <div class="card meal-card meal-snacks">
-      <h3 class="meal-title">Snacks</h3>
-      <p class="help">Combine all snacks for the day.</p>
-      <div class="meal-grid">
-        <div>
-          <label class="q-sm" for="f-sc">Carbs</label>
-          <div class="input-row">
-            <input type="number" inputmode="numeric" step="1" min="0" id="f-sc" name="snacks_carbs" placeholder="g" />
-            <span class="suffix">g</span>
+    <div class="card meal-card meal-snacks" id="card-snacks">
+      <button type="button" class="meal-header">
+        <h3 class="meal-title">Snacks</h3>
+        <span class="meal-summary" id="summary-snacks"></span>
+        <span class="meal-chevron">▾</span>
+      </button>
+      <div class="meal-body">
+        <p class="help">Combine all snacks for the day.</p>
+        <div class="meal-grid">
+          <div>
+            <label class="q-sm" for="f-sc">Carbs</label>
+            <div class="input-row">
+              <input type="number" inputmode="numeric" step="1" min="0" id="f-sc" name="snacks_carbs" placeholder="g" />
+              <span class="suffix">g</span>
+            </div>
           </div>
-        </div>
-        <div>
-          <label class="q-sm" for="f-sp">Protein</label>
-          <div class="input-row">
-            <input type="number" inputmode="numeric" step="1" min="0" id="f-sp" name="snacks_protein" placeholder="g" />
-            <span class="suffix">g</span>
+          <div>
+            <label class="q-sm" for="f-sp">Protein</label>
+            <div class="input-row">
+              <input type="number" inputmode="numeric" step="1" min="0" id="f-sp" name="snacks_protein" placeholder="g" />
+              <span class="suffix">g</span>
+            </div>
           </div>
         </div>
       </div>

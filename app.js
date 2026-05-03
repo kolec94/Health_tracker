@@ -13,7 +13,11 @@ const FIELDS = [
   'exercised', 'exercise_notes',
   'notes'
 ];
-const COLLAPSIBLE_MEALS = ['breakfast', 'lunch', 'dinner'];
+const COLLAPSIBLE_MEALS = ['breakfast', 'lunch', 'dinner', 'snacks'];
+const COLLAPSIBLE_VITALS = [
+  { id: 'weight', field: 'weight', suffix: 'lbs' },
+  { id: 'bg',     field: 'bg',    suffix: 'mg/dL' },
+];
 const NUMERIC = new Set([
   'weight', 'bg',
   'breakfast_carbs','breakfast_protein',
@@ -84,7 +88,7 @@ function showToast(msg) {
 
 // ===== Theme =====
 function initTheme() {
-  const saved = localStorage.getItem('healthTracker.theme') || 'light';
+  const saved = localStorage.getItem('healthTracker.theme') || 'dark';
   applyTheme(saved);
   $('#theme-toggle').addEventListener('click', () => {
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
@@ -128,7 +132,7 @@ function initForm() {
   if (existing) populateForm(existing);
 
   // live totals + summaries
-  form.addEventListener('input', () => { updateLiveTotals(); updateAllMealSummaries(); });
+  form.addEventListener('input', () => { updateLiveTotals(); updateAllMealSummaries(); updateAllVitalSummaries(); });
   // when user changes the date field, load existing if present
   $('#f-date').addEventListener('change', () => {
     const d = $('#f-date').value;
@@ -144,6 +148,10 @@ function initForm() {
       setMealCollapsed(m, false);
       document.getElementById('summary-' + m).textContent = '';
     });
+    COLLAPSIBLE_VITALS.forEach(({ id }) => {
+      setVitalCollapsed(id, false);
+      document.getElementById('summary-' + id).textContent = '';
+    });
     $('#exercise-detail').classList.remove('visible');
     updateLiveTotals();
   });
@@ -154,6 +162,7 @@ function initForm() {
     if (!data.date) { showToast('Please pick a date'); return; }
     upsertEntry(data);
     autoCollapseMeals(data);
+    autoCollapseVitals(data);
     showToast('Saved');
     updateLiveTotals();
   });
@@ -191,6 +200,7 @@ function populateForm(e) {
   }
   $('#exercise-detail').classList.toggle('visible', !!e.exercised);
   autoCollapseMeals(e);
+  autoCollapseVitals(e);
 }
 
 // ===== Meal collapse =====
@@ -199,6 +209,41 @@ function setMealCollapsed(meal, collapsed) {
   const body = card.querySelector('.meal-body');
   card.classList.toggle('collapsed', collapsed);
   body.style.display = collapsed ? 'none' : '';
+}
+
+function setVitalCollapsed(id, collapsed) {
+  const card = document.getElementById('card-' + id);
+  const body = card.querySelector('.card-body');
+  card.classList.toggle('collapsed', collapsed);
+  if (body) body.style.display = collapsed ? 'none' : '';
+}
+
+function initVitalCollapse() {
+  COLLAPSIBLE_VITALS.forEach(({ id }) => {
+    document.getElementById('card-' + id)
+      .querySelector('.card-header')
+      .addEventListener('click', () => {
+        const card = document.getElementById('card-' + id);
+        setVitalCollapsed(id, !card.classList.contains('collapsed'));
+      });
+  });
+}
+
+function autoCollapseVitals(entry) {
+  COLLAPSIBLE_VITALS.forEach(({ id, field, suffix }) => {
+    const hasData = entry[field] != null;
+    setVitalCollapsed(id, hasData);
+    const el = document.getElementById('summary-' + id);
+    if (el) el.textContent = hasData ? `${entry[field]} ${suffix}` : '';
+  });
+}
+
+function updateAllVitalSummaries() {
+  const e = readForm();
+  COLLAPSIBLE_VITALS.forEach(({ id, field, suffix }) => {
+    const el = document.getElementById('summary-' + id);
+    if (el) el.textContent = e[field] != null ? `${e[field]} ${suffix}` : '';
+  });
 }
 
 function initMealCollapse() {
@@ -604,6 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initTabs();
   initMealCollapse();
+  initVitalCollapse();
   initForm();
   initData();
 });
