@@ -280,6 +280,16 @@
 <!-- ============== DATA TAB ============== -->
 <section id="tab-data" class="tab-panel">
   <div class="card">
+    <h2>Excel database</h2>
+    <p class="help">Connect your <code>.xlsx</code> file and every save will write directly to it. Requires Chrome or Edge. Data is also cached in the browser so the app works offline.</p>
+    <p id="excel-status" class="help">Not connected — data saved to browser only</p>
+    <div class="data-actions">
+      <button class="btn-primary" id="excel-connect">Connect Excel file</button>
+      <button class="btn-secondary" id="excel-disconnect" hidden>Disconnect</button>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Backup &amp; restore</h2>
     <p class="help">Your entries live in this browser's local storage. Export regularly so you don't lose them if you clear browser data or switch devices.</p>
     <div class="data-actions">
@@ -307,6 +317,7 @@
 
 </main>
 
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

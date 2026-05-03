@@ -536,6 +536,10 @@ textarea:focus { border-color: var(--accent); }
 .chart-wrap { width: 100%; }
 canvas { width: 100% !important; height: auto !important; max-height: 220px; }
 
+/* ===== Excel status ===== */
+.excel-ok      { color: #34a853 !important; }
+.excel-pending { color: #f9ab00 !important; }
+
 /* ===== Data tab ===== */
 .data-actions {
   display: flex;

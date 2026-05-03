@@ -38,6 +38,7 @@ function loadAll() {
 }
 function saveAll(entries) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  if (xlsxHandle) writeToXlsx(entries).catch(e => console.warn('xlsx write:', e));
 }
 function upsertEntry(entry) {
   const all = loadAll();
@@ -649,12 +650,218 @@ function mergeImport(imported) {
   saveAll(merged);
 }
 
+// ===== Excel / XLSX =====
+let xlsxHandle = null;
+
+// Persist FileSystemFileHandle across sessions via IndexedDB
+const IDB = {
+  async open() {
+    return new Promise((res, rej) => {
+      const req = indexedDB.open('ht_db', 1);
+      req.onupgradeneeded = e => e.target.result.createObjectStore('handles');
+      req.onsuccess = e => res(e.target.result);
+      req.onerror = () => rej(req.error);
+    });
+  },
+  async get(key) {
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const req = db.transaction('handles').objectStore('handles').get(key);
+      req.onsuccess = () => res(req.result ?? null);
+      req.onerror = () => rej(req.error);
+    });
+  },
+  async set(key, val) {
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const tx = db.transaction('handles', 'readwrite');
+      tx.objectStore('handles').put(val, key);
+      tx.oncomplete = res;
+      tx.onerror = () => rej(tx.error);
+    });
+  },
+  async del(key) {
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const tx = db.transaction('handles', 'readwrite');
+      tx.objectStore('handles').delete(key);
+      tx.oncomplete = res;
+      tx.onerror = () => rej(tx.error);
+    });
+  }
+};
+
+function normalizeDate(d) {
+  if (!d) return '';
+  const s = String(d).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const p = new Date(s);
+  return isNaN(p) ? s : new Date(p - p.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
+function rowsToEntries(rows) {
+  return rows.map(r => ({
+    date: normalizeDate(r.date),
+    weight: r.weight_lbs !== '' && r.weight_lbs != null ? parseFloat(r.weight_lbs) : null,
+    bg: r.fasting_bg_mgdl !== '' && r.fasting_bg_mgdl != null ? parseFloat(r.fasting_bg_mgdl) : null,
+    breakfast_carbs:   r.breakfast_carbs_g   !== '' && r.breakfast_carbs_g   != null ? parseFloat(r.breakfast_carbs_g)   : null,
+    breakfast_protein: r.breakfast_protein_g !== '' && r.breakfast_protein_g != null ? parseFloat(r.breakfast_protein_g) : null,
+    lunch_carbs:       r.lunch_carbs_g       !== '' && r.lunch_carbs_g       != null ? parseFloat(r.lunch_carbs_g)       : null,
+    lunch_protein:     r.lunch_protein_g     !== '' && r.lunch_protein_g     != null ? parseFloat(r.lunch_protein_g)     : null,
+    dinner_carbs:      r.dinner_carbs_g      !== '' && r.dinner_carbs_g      != null ? parseFloat(r.dinner_carbs_g)      : null,
+    dinner_protein:    r.dinner_protein_g    !== '' && r.dinner_protein_g    != null ? parseFloat(r.dinner_protein_g)    : null,
+    snacks_carbs:      r.snacks_carbs_g      !== '' && r.snacks_carbs_g      != null ? parseFloat(r.snacks_carbs_g)      : null,
+    snacks_protein:    r.snacks_protein_g    !== '' && r.snacks_protein_g    != null ? parseFloat(r.snacks_protein_g)    : null,
+    had_drink:  r.had_drink  === 'yes' || r.had_drink  === true,
+    meds_taken: r.meds_taken === 'yes' || r.meds_taken === true,
+    exercised:  r.exercised  === 'yes' || r.exercised  === true,
+    exercise_notes: r.exercise_notes || '',
+    notes: r.notes || ''
+  })).filter(e => e.date).sort((a, b) => a.date < b.date ? 1 : -1);
+}
+
+function entriesToRows(entries) {
+  return entries.map(e => ({
+    date:                 e.date,
+    weight_lbs:           e.weight           ?? '',
+    fasting_bg_mgdl:      e.bg               ?? '',
+    breakfast_carbs_g:    e.breakfast_carbs   ?? '',
+    breakfast_protein_g:  e.breakfast_protein ?? '',
+    lunch_carbs_g:        e.lunch_carbs       ?? '',
+    lunch_protein_g:      e.lunch_protein     ?? '',
+    dinner_carbs_g:       e.dinner_carbs      ?? '',
+    dinner_protein_g:     e.dinner_protein    ?? '',
+    snacks_carbs_g:       e.snacks_carbs      ?? '',
+    snacks_protein_g:     e.snacks_protein    ?? '',
+    total_carbs_g:        sumCarbs(e),
+    total_protein_g:      sumProtein(e),
+    had_drink:            e.had_drink  ? 'yes' : 'no',
+    meds_taken:           e.meds_taken ? 'yes' : 'no',
+    exercised:            e.exercised  ? 'yes' : 'no',
+    exercise_notes:       e.exercise_notes || '',
+    notes:                e.notes || ''
+  }));
+}
+
+async function readFromXlsx() {
+  const file = await xlsxHandle.getFile();
+  const ab   = await file.arrayBuffer();
+  const wb   = XLSX.read(ab, { type: 'array', raw: false });
+  const ws   = wb.Sheets[wb.SheetNames[0]];
+  if (!ws) return [];
+  return rowsToEntries(XLSX.utils.sheet_to_json(ws, { defval: '' }));
+}
+
+async function writeToXlsx(entries) {
+  const ws  = XLSX.utils.json_to_sheet(entriesToRows(entries));
+  const wb  = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Health Tracker');
+  const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const w   = await xlsxHandle.createWritable();
+  await w.write(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+  await w.close();
+}
+
+function setXlsxStatus(state, name = '') {
+  const el  = $('#excel-status');
+  const con = $('#excel-connect');
+  const dis = $('#excel-disconnect');
+  if (!el) return;
+  if (state === 'ok') {
+    el.textContent = '● Connected: ' + name;
+    el.className = 'help excel-ok';
+    con.hidden = true;
+    dis.hidden = false;
+  } else if (state === 'pending') {
+    el.textContent = '⚠ Reconnect needed: ' + name;
+    el.className = 'help excel-pending';
+    con.textContent = 'Reconnect';
+    con.hidden = false;
+    dis.hidden = false;
+    con._pendingHandle = null; // set by caller
+  } else {
+    el.textContent = 'Not connected — data saved to browser only';
+    el.className = 'help';
+    con.textContent = 'Connect Excel file';
+    con.hidden = false;
+    dis.hidden = true;
+    con._pendingHandle = null;
+  }
+}
+
+async function activateHandle(handle) {
+  const perm = await handle.requestPermission({ mode: 'readwrite' });
+  if (perm !== 'granted') throw new Error('Permission denied');
+  xlsxHandle = handle;
+  await IDB.set('xlsxHandle', handle);
+  const entries = await readFromXlsx();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); // sync cache, skip xlsx write
+  setXlsxStatus('ok', handle.name);
+  renderHistory();
+  renderStats();
+  const today = loadAll().find(e => e.date === todayISO());
+  if (today) populateForm(today);
+  showToast('Connected: ' + handle.name);
+}
+
+async function initExcel() {
+  if (!window.showOpenFilePicker) { setXlsxStatus(null); return; }
+  try {
+    const handle = await IDB.get('xlsxHandle');
+    if (!handle) { setXlsxStatus(null); return; }
+    const perm = await handle.queryPermission({ mode: 'readwrite' });
+    if (perm === 'granted') {
+      xlsxHandle = handle;
+      const entries = await readFromXlsx();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      setXlsxStatus('ok', handle.name);
+    } else {
+      setXlsxStatus('pending', handle.name);
+      $('#excel-connect')._pendingHandle = handle;
+    }
+  } catch (e) {
+    setXlsxStatus(null);
+  }
+}
+
+function initExcelUI() {
+  $('#excel-connect').addEventListener('click', async () => {
+    const btn = $('#excel-connect');
+    try {
+      if (btn._pendingHandle) {
+        await activateHandle(btn._pendingHandle);
+        btn._pendingHandle = null;
+      } else {
+        if (!window.showOpenFilePicker) {
+          alert('Direct file access requires Chrome or Edge.');
+          return;
+        }
+        const [handle] = await window.showOpenFilePicker({
+          types: [{ description: 'Excel', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }]
+        });
+        await activateHandle(handle);
+      }
+    } catch (e) {
+      if (e.name !== 'AbortError') showToast('Error: ' + e.message);
+    }
+  });
+
+  $('#excel-disconnect').addEventListener('click', async () => {
+    xlsxHandle = null;
+    await IDB.del('xlsxHandle');
+    setXlsxStatus(null);
+    showToast('Disconnected from Excel');
+  });
+}
+
 // ===== Boot =====
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   initTabs();
   initMealCollapse();
   initVitalCollapse();
+  initExcelUI();
+  await initExcel(); // reads xlsx into localStorage cache before form loads
   initForm();
   initData();
 });
