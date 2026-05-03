@@ -480,7 +480,7 @@ textarea:focus { border-color: var(--accent); }
 .history-item:hover { background: var(--history-hover-bg); border-color: var(--history-hover-border); }
 .history-date {
   font-weight: 500;
-  min-width: 110px;
+  width: 100%;
   color: var(--text);
 }
 .history-stat {
