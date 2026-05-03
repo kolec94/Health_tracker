@@ -265,6 +265,7 @@ main {
 }
 .collapsible-card.collapsed .card-header { padding-bottom: 0; }
 .collapsible-card.collapsed .meal-chevron { transform: rotate(-90deg); }
+.card-header .q { margin: 0; font-size: 16px; }
 
 /* exercise detail (hidden until checkbox checked) */
 .exercise-detail { display: none; }

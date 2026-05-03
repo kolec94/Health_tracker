@@ -13,7 +13,8 @@ const FIELDS = [
   'exercised', 'exercise_notes',
   'notes'
 ];
-const COLLAPSIBLE_MEALS = ['breakfast', 'lunch', 'dinner', 'snacks'];
+const COLLAPSIBLE_MEALS = ['breakfast', 'lunch', 'dinner']; // auto-collapse on save + load
+const ALL_COLLAPSIBLE_MEALS = ['breakfast', 'lunch', 'dinner', 'snacks']; // click handlers + load
 const COLLAPSIBLE_VITALS = [
   { id: 'weight', field: 'weight', suffix: 'lbs' },
   { id: 'bg',     field: 'bg',    suffix: 'mg/dL' },
@@ -144,7 +145,7 @@ function initForm() {
   $('#clear-btn').addEventListener('click', () => {
     form.reset();
     $('#f-date').value = todayISO();
-    COLLAPSIBLE_MEALS.forEach(m => {
+    ALL_COLLAPSIBLE_MEALS.forEach(m => {
       setMealCollapsed(m, false);
       document.getElementById('summary-' + m).textContent = '';
     });
@@ -200,6 +201,10 @@ function populateForm(e) {
   }
   $('#exercise-detail').classList.toggle('visible', !!e.exercised);
   autoCollapseMeals(e);
+  // snacks: collapse on load only (not on save — stays open while filling out)
+  const snacksHasData = e.snacks_carbs != null || e.snacks_protein != null;
+  setMealCollapsed('snacks', snacksHasData);
+  updateMealSummary('snacks', e);
   autoCollapseVitals(e);
 }
 
@@ -247,7 +252,7 @@ function updateAllVitalSummaries() {
 }
 
 function initMealCollapse() {
-  COLLAPSIBLE_MEALS.forEach(meal => {
+  ALL_COLLAPSIBLE_MEALS.forEach(meal => {
     document.getElementById('card-' + meal)
       .querySelector('.meal-header')
       .addEventListener('click', () => {
