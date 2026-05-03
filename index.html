@@ -59,61 +59,79 @@
     </div>
 
     <!-- Meals (4 mini cards inside one section) -->
-    <div class="card meal-card meal-breakfast">
-      <h3 class="meal-title">Breakfast</h3>
-      <div class="meal-grid">
-        <div>
-          <label class="q-sm" for="f-bc">Carbs</label>
-          <div class="input-row">
-            <input type="number" inputmode="numeric" step="1" min="0" id="f-bc" name="breakfast_carbs" placeholder="g" />
-            <span class="suffix">g</span>
+    <div class="card meal-card meal-breakfast" id="card-breakfast">
+      <button type="button" class="meal-header">
+        <h3 class="meal-title">Breakfast</h3>
+        <span class="meal-summary" id="summary-breakfast"></span>
+        <span class="meal-chevron">▾</span>
+      </button>
+      <div class="meal-body">
+        <div class="meal-grid">
+          <div>
+            <label class="q-sm" for="f-bc">Carbs</label>
+            <div class="input-row">
+              <input type="number" inputmode="numeric" step="1" min="0" id="f-bc" name="breakfast_carbs" placeholder="g" />
+              <span class="suffix">g</span>
+            </div>
           </div>
-        </div>
-        <div>
-          <label class="q-sm" for="f-bp">Protein</label>
-          <div class="input-row">
-            <input type="number" inputmode="numeric" step="1" min="0" id="f-bp" name="breakfast_protein" placeholder="g" />
-            <span class="suffix">g</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card meal-card meal-lunch">
-      <h3 class="meal-title">Lunch</h3>
-      <div class="meal-grid">
-        <div>
-          <label class="q-sm" for="f-lc">Carbs</label>
-          <div class="input-row">
-            <input type="number" inputmode="numeric" step="1" min="0" id="f-lc" name="lunch_carbs" placeholder="g" />
-            <span class="suffix">g</span>
-          </div>
-        </div>
-        <div>
-          <label class="q-sm" for="f-lp">Protein</label>
-          <div class="input-row">
-            <input type="number" inputmode="numeric" step="1" min="0" id="f-lp" name="lunch_protein" placeholder="g" />
-            <span class="suffix">g</span>
+          <div>
+            <label class="q-sm" for="f-bp">Protein</label>
+            <div class="input-row">
+              <input type="number" inputmode="numeric" step="1" min="0" id="f-bp" name="breakfast_protein" placeholder="g" />
+              <span class="suffix">g</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card meal-card meal-dinner">
-      <h3 class="meal-title">Dinner</h3>
-      <div class="meal-grid">
-        <div>
-          <label class="q-sm" for="f-dc">Carbs</label>
-          <div class="input-row">
-            <input type="number" inputmode="numeric" step="1" min="0" id="f-dc" name="dinner_carbs" placeholder="g" />
-            <span class="suffix">g</span>
+    <div class="card meal-card meal-lunch" id="card-lunch">
+      <button type="button" class="meal-header">
+        <h3 class="meal-title">Lunch</h3>
+        <span class="meal-summary" id="summary-lunch"></span>
+        <span class="meal-chevron">▾</span>
+      </button>
+      <div class="meal-body">
+        <div class="meal-grid">
+          <div>
+            <label class="q-sm" for="f-lc">Carbs</label>
+            <div class="input-row">
+              <input type="number" inputmode="numeric" step="1" min="0" id="f-lc" name="lunch_carbs" placeholder="g" />
+              <span class="suffix">g</span>
+            </div>
+          </div>
+          <div>
+            <label class="q-sm" for="f-lp">Protein</label>
+            <div class="input-row">
+              <input type="number" inputmode="numeric" step="1" min="0" id="f-lp" name="lunch_protein" placeholder="g" />
+              <span class="suffix">g</span>
+            </div>
           </div>
         </div>
-        <div>
-          <label class="q-sm" for="f-dp">Protein</label>
-          <div class="input-row">
-            <input type="number" inputmode="numeric" step="1" min="0" id="f-dp" name="dinner_protein" placeholder="g" />
-            <span class="suffix">g</span>
+      </div>
+    </div>
+
+    <div class="card meal-card meal-dinner" id="card-dinner">
+      <button type="button" class="meal-header">
+        <h3 class="meal-title">Dinner</h3>
+        <span class="meal-summary" id="summary-dinner"></span>
+        <span class="meal-chevron">▾</span>
+      </button>
+      <div class="meal-body">
+        <div class="meal-grid">
+          <div>
+            <label class="q-sm" for="f-dc">Carbs</label>
+            <div class="input-row">
+              <input type="number" inputmode="numeric" step="1" min="0" id="f-dc" name="dinner_carbs" placeholder="g" />
+              <span class="suffix">g</span>
+            </div>
+          </div>
+          <div>
+            <label class="q-sm" for="f-dp">Protein</label>
+            <div class="input-row">
+              <input type="number" inputmode="numeric" step="1" min="0" id="f-dp" name="dinner_protein" placeholder="g" />
+              <span class="suffix">g</span>
+            </div>
           </div>
         </div>
       </div>
@@ -137,6 +155,34 @@
             <span class="suffix">g</span>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Had a drink -->
+    <div class="card">
+      <label class="drink-label">
+        <input type="checkbox" name="had_drink" id="f-drink" />
+        <span class="drink-text">Had a drink today</span>
+      </label>
+    </div>
+
+    <!-- Meds -->
+    <div class="card">
+      <label class="drink-label">
+        <input type="checkbox" name="meds_taken" id="f-meds" />
+        <span class="drink-text">Meds taken</span>
+      </label>
+    </div>
+
+    <!-- Exercise -->
+    <div class="card">
+      <label class="drink-label">
+        <input type="checkbox" name="exercised" id="f-exercised" />
+        <span class="drink-text">Exercised today</span>
+      </label>
+      <div class="exercise-detail" id="exercise-detail">
+        <label class="q-sm" for="f-exercise-notes" style="margin-top:12px;display:block;">What did you do?</label>
+        <textarea id="f-exercise-notes" name="exercise_notes" rows="2" placeholder="e.g. 30 min walk, weights..."></textarea>
       </div>
     </div>
 

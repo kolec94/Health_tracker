@@ -8,8 +8,12 @@ const FIELDS = [
   'lunch_carbs',     'lunch_protein',
   'dinner_carbs',    'dinner_protein',
   'snacks_carbs',    'snacks_protein',
+  'had_drink',
+  'meds_taken',
+  'exercised', 'exercise_notes',
   'notes'
 ];
+const COLLAPSIBLE_MEALS = ['breakfast', 'lunch', 'dinner'];
 const NUMERIC = new Set([
   'weight', 'bg',
   'breakfast_carbs','breakfast_protein',
@@ -104,8 +108,8 @@ function initForm() {
   const existing = loadAll().find(e => e.date === todayISO());
   if (existing) populateForm(existing);
 
-  // live totals
-  form.addEventListener('input', updateLiveTotals);
+  // live totals + summaries
+  form.addEventListener('input', () => { updateLiveTotals(); updateAllMealSummaries(); });
   // when user changes the date field, load existing if present
   $('#f-date').addEventListener('change', () => {
     const d = $('#f-date').value;
@@ -117,6 +121,11 @@ function initForm() {
   $('#clear-btn').addEventListener('click', () => {
     form.reset();
     $('#f-date').value = todayISO();
+    COLLAPSIBLE_MEALS.forEach(m => {
+      document.getElementById('card-' + m).classList.remove('collapsed');
+      document.getElementById('summary-' + m).textContent = '';
+    });
+    $('#exercise-detail').classList.remove('visible');
     updateLiveTotals();
   });
 
@@ -125,9 +134,18 @@ function initForm() {
     const data = readForm();
     if (!data.date) { showToast('Please pick a date'); return; }
     upsertEntry(data);
+    autoCollapseMeals(data);
     showToast('Saved');
     updateLiveTotals();
   });
+
+  const exerciseCheck = $('#f-exercised');
+  const exerciseDetail = $('#exercise-detail');
+  function syncExerciseDetail() {
+    exerciseDetail.classList.toggle('visible', exerciseCheck.checked);
+  }
+  exerciseCheck.addEventListener('change', syncExerciseDetail);
+  syncExerciseDetail();
 
   updateLiveTotals();
 }
@@ -137,6 +155,7 @@ function readForm() {
   for (const f of FIELDS) {
     const el = document.querySelector(`[name="${f}"]`);
     if (!el) continue;
+    if (el.type === 'checkbox') { out[f] = el.checked; continue; }
     const v = el.value.trim();
     if (NUMERIC.has(f)) out[f] = v === '' ? null : parseFloat(v);
     else out[f] = v;
@@ -148,8 +167,42 @@ function populateForm(e) {
   for (const f of FIELDS) {
     const el = document.querySelector(`[name="${f}"]`);
     if (!el) continue;
+    if (el.type === 'checkbox') { el.checked = !!e[f]; continue; }
     el.value = e[f] == null ? '' : e[f];
   }
+  $('#exercise-detail').classList.toggle('visible', !!e.exercised);
+  autoCollapseMeals(e);
+}
+
+// ===== Meal collapse =====
+function initMealCollapse() {
+  COLLAPSIBLE_MEALS.forEach(meal => {
+    document.getElementById('card-' + meal)
+      .querySelector('.meal-header')
+      .addEventListener('click', () => {
+        document.getElementById('card-' + meal).classList.toggle('collapsed');
+      });
+  });
+}
+
+function autoCollapseMeals(entry) {
+  COLLAPSIBLE_MEALS.forEach(meal => {
+    const hasData = entry[meal + '_carbs'] != null || entry[meal + '_protein'] != null;
+    document.getElementById('card-' + meal).classList.toggle('collapsed', hasData);
+    updateMealSummary(meal, entry);
+  });
+}
+
+function updateMealSummary(meal, entry) {
+  const c = n(entry[meal + '_carbs']);
+  const p = n(entry[meal + '_protein']);
+  const el = document.getElementById('summary-' + meal);
+  el.textContent = (c || p) ? `${c}g C / ${p}g P` : '';
+}
+
+function updateAllMealSummaries() {
+  const e = readForm();
+  COLLAPSIBLE_MEALS.forEach(meal => updateMealSummary(meal, e));
 }
 
 function updateLiveTotals() {
@@ -200,6 +253,10 @@ function toggleDetail(itemEl, e) {
     <div class="row"><span>Dinner</span><span>${n(e.dinner_carbs)}g C / ${n(e.dinner_protein)}g P</span></div>
     <div class="row"><span>Snacks</span><span>${n(e.snacks_carbs)}g C / ${n(e.snacks_protein)}g P</span></div>
     <div class="row"><strong><span>Total</span><span>${sumCarbs(e)}g C / ${sumProtein(e)}g P</span></strong></div>
+    <div class="row"><span>Had a drink</span><span>${e.had_drink ? 'Yes' : 'No'}</span></div>
+    <div class="row"><span>Meds taken</span><span>${e.meds_taken ? 'Yes' : 'No'}</span></div>
+    <div class="row"><span>Exercised</span><span>${e.exercised ? 'Yes' : 'No'}</span></div>
+    ${e.exercise_notes ? `<div class="row" style="display:block"><span>Exercise</span><div style="margin-top:4px;color:#202124">${escapeHtml(e.exercise_notes)}</div></div>` : ''}
     ${e.notes ? `<div class="row" style="display:block"><span>Notes</span><div style="margin-top:4px;color:#202124">${escapeHtml(e.notes)}</div></div>` : ''}
     <div class="actions-row">
       <button class="btn-secondary" data-act="edit">Edit</button>
@@ -385,6 +442,9 @@ function exportCSV() {
     'dinner_carbs_g','dinner_protein_g',
     'snacks_carbs_g','snacks_protein_g',
     'total_carbs_g','total_protein_g',
+    'had_drink',
+    'meds_taken',
+    'exercised', 'exercise_notes',
     'notes'
   ];
   const rows = entries.map(e => [
@@ -401,6 +461,10 @@ function exportCSV() {
     e.snacks_protein ?? '',
     sumCarbs(e),
     sumProtein(e),
+    e.had_drink ? 'yes' : 'no',
+    e.meds_taken ? 'yes' : 'no',
+    e.exercised ? 'yes' : 'no',
+    csvEscape(e.exercise_notes || ''),
     csvEscape(e.notes || '')
   ]);
   const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -511,6 +575,7 @@ function mergeImport(imported) {
 // ===== Boot =====
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
+  initMealCollapse();
   initForm();
   initData();
 });
