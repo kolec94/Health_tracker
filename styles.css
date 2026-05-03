@@ -480,12 +480,13 @@ textarea:focus { border-color: var(--accent); }
 .history-item:hover { background: var(--history-hover-bg); border-color: var(--history-hover-border); }
 .history-date {
   font-weight: 500;
-  width: 100%;
+  flex: 0 0 100%;
   color: var(--text);
 }
 .history-stat {
   font-size: 13px;
   color: var(--text-sub);
+  white-space: nowrap;
 }
 .history-stat strong { color: var(--text); font-weight: 500; }
 .empty { color: var(--text-muted); font-style: italic; margin: 0; }
