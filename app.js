@@ -82,6 +82,25 @@ function showToast(msg) {
   t._timer = setTimeout(() => { t.hidden = true; }, 2200);
 }
 
+// ===== Theme =====
+function initTheme() {
+  const saved = localStorage.getItem('healthTracker.theme') || 'light';
+  applyTheme(saved);
+  $('#theme-toggle').addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem('healthTracker.theme', next);
+  });
+}
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  $('#theme-toggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+  if (document.querySelector('#tab-stats.active')) renderStats();
+}
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
 // ===== Tab nav =====
 function initTabs() {
   $$('.tab').forEach(btn => {
@@ -122,7 +141,7 @@ function initForm() {
     form.reset();
     $('#f-date').value = todayISO();
     COLLAPSIBLE_MEALS.forEach(m => {
-      document.getElementById('card-' + m).classList.remove('collapsed');
+      setMealCollapsed(m, false);
       document.getElementById('summary-' + m).textContent = '';
     });
     $('#exercise-detail').classList.remove('visible');
@@ -175,12 +194,20 @@ function populateForm(e) {
 }
 
 // ===== Meal collapse =====
+function setMealCollapsed(meal, collapsed) {
+  const card = document.getElementById('card-' + meal);
+  const body = card.querySelector('.meal-body');
+  card.classList.toggle('collapsed', collapsed);
+  body.style.display = collapsed ? 'none' : '';
+}
+
 function initMealCollapse() {
   COLLAPSIBLE_MEALS.forEach(meal => {
     document.getElementById('card-' + meal)
       .querySelector('.meal-header')
       .addEventListener('click', () => {
-        document.getElementById('card-' + meal).classList.toggle('collapsed');
+        const card = document.getElementById('card-' + meal);
+        setMealCollapsed(meal, !card.classList.contains('collapsed'));
       });
   });
 }
@@ -188,7 +215,7 @@ function initMealCollapse() {
 function autoCollapseMeals(entry) {
   COLLAPSIBLE_MEALS.forEach(meal => {
     const hasData = entry[meal + '_carbs'] != null || entry[meal + '_protein'] != null;
-    document.getElementById('card-' + meal).classList.toggle('collapsed', hasData);
+    setMealCollapsed(meal, hasData);
     updateMealSummary(meal, entry);
   });
 }
@@ -357,11 +384,11 @@ function drawChart(sel, entries, field, color) {
   const h = cssH - padT - padB;
 
   // background
-  ctx.fillStyle = '#fafafa';
+  ctx.fillStyle = cssVar('--chart-bg');
   ctx.fillRect(padL, padT, w, h);
 
   if (data.length < 2) {
-    ctx.fillStyle = '#9aa0a6';
+    ctx.fillStyle = cssVar('--text-sub');
     ctx.font = '13px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Need at least 2 entries to draw a trend', cssW/2, cssH/2);
@@ -376,8 +403,8 @@ function drawChart(sel, entries, field, color) {
   yMin -= pad; yMax += pad;
 
   // grid lines + labels (4 horizontal lines)
-  ctx.strokeStyle = '#e0e0e0';
-  ctx.fillStyle = '#5f6368';
+  ctx.strokeStyle = cssVar('--chart-grid');
+  ctx.fillStyle = cssVar('--chart-label');
   ctx.font = '11px system-ui, sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
@@ -574,6 +601,7 @@ function mergeImport(imported) {
 
 // ===== Boot =====
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   initTabs();
   initMealCollapse();
   initForm();
