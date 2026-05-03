@@ -38,7 +38,7 @@ function loadAll() {
 }
 function saveAll(entries) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  if (xlsxHandle) writeToXlsx(entries).catch(e => console.warn('xlsx write:', e));
+  if (ghToken) pushToGitHub(entries).catch(e => console.warn('gh push:', e));
 }
 function upsertEntry(entry) {
   const all = loadAll();
@@ -650,46 +650,13 @@ function mergeImport(imported) {
   saveAll(merged);
 }
 
-// ===== Excel / XLSX =====
-let xlsxHandle = null;
+// ===== GitHub sync =====
+const GH_REPO = 'kolec94/Health_tracker';
+const GH_FILE = 'Health_Tracker.xlsx';
+const GH_TOKEN_KEY = 'healthTracker.ghToken';
 
-// Persist FileSystemFileHandle across sessions via IndexedDB
-const IDB = {
-  async open() {
-    return new Promise((res, rej) => {
-      const req = indexedDB.open('ht_db', 1);
-      req.onupgradeneeded = e => e.target.result.createObjectStore('handles');
-      req.onsuccess = e => res(e.target.result);
-      req.onerror = () => rej(req.error);
-    });
-  },
-  async get(key) {
-    const db = await this.open();
-    return new Promise((res, rej) => {
-      const req = db.transaction('handles').objectStore('handles').get(key);
-      req.onsuccess = () => res(req.result ?? null);
-      req.onerror = () => rej(req.error);
-    });
-  },
-  async set(key, val) {
-    const db = await this.open();
-    return new Promise((res, rej) => {
-      const tx = db.transaction('handles', 'readwrite');
-      tx.objectStore('handles').put(val, key);
-      tx.oncomplete = res;
-      tx.onerror = () => rej(tx.error);
-    });
-  },
-  async del(key) {
-    const db = await this.open();
-    return new Promise((res, rej) => {
-      const tx = db.transaction('handles', 'readwrite');
-      tx.objectStore('handles').delete(key);
-      tx.oncomplete = res;
-      tx.onerror = () => rej(tx.error);
-    });
-  }
-};
+let ghToken = null;
+let ghFileSha = null;
 
 function normalizeDate(d) {
   if (!d) return '';
@@ -743,114 +710,114 @@ function entriesToRows(entries) {
   }));
 }
 
-async function readFromXlsx() {
-  const file = await xlsxHandle.getFile();
-  const ab   = await file.arrayBuffer();
-  const wb   = XLSX.read(ab, { type: 'array', raw: false });
-  const ws   = wb.Sheets[wb.SheetNames[0]];
-  if (!ws) return [];
-  return rowsToEntries(XLSX.utils.sheet_to_json(ws, { defval: '' }));
+async function ghFetch(path, opts = {}) {
+  const res = await fetch('https://api.github.com' + path, {
+    ...opts,
+    headers: {
+      'Authorization': 'Bearer ' + ghToken,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'Content-Type': 'application/json',
+      ...(opts.headers || {})
+    }
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.message || res.statusText);
+  return json;
 }
 
-async function writeToXlsx(entries) {
+async function fetchXlsxFromGH() {
+  const data = await ghFetch(`/repos/${GH_REPO}/contents/${GH_FILE}`);
+  ghFileSha = data.sha;
+  const binary = atob(data.content.replace(/\n/g, ''));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const wb = XLSX.read(bytes.buffer, { type: 'array', raw: false });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  return ws ? rowsToEntries(XLSX.utils.sheet_to_json(ws, { defval: '' })) : [];
+}
+
+async function pushToGitHub(entries) {
   const ws  = XLSX.utils.json_to_sheet(entriesToRows(entries));
   const wb  = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Health Tracker');
   const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-  const w   = await xlsxHandle.createWritable();
-  await w.write(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-  await w.close();
+  let binary = '';
+  new Uint8Array(buf).forEach(b => binary += String.fromCharCode(b));
+  const data = await ghFetch(`/repos/${GH_REPO}/contents/${GH_FILE}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      message: `Health data ${todayISO()}`,
+      content: btoa(binary),
+      sha: ghFileSha
+    })
+  });
+  ghFileSha = data.content.sha;
 }
 
-function setXlsxStatus(state, name = '') {
+function setGhStatus(state) {
   const el  = $('#excel-status');
   const con = $('#excel-connect');
   const dis = $('#excel-disconnect');
+  const inp = $('#gh-token-row');
   if (!el) return;
   if (state === 'ok') {
-    el.textContent = '● Connected: ' + name;
+    el.textContent = '● Syncing to GitHub — every save commits to the repo';
     el.className = 'help excel-ok';
+    inp.hidden = true;
     con.hidden = true;
     dis.hidden = false;
-  } else if (state === 'pending') {
-    el.textContent = '⚠ Reconnect needed: ' + name;
-    el.className = 'help excel-pending';
-    con.textContent = 'Reconnect';
-    con.hidden = false;
-    dis.hidden = false;
-    con._pendingHandle = null; // set by caller
   } else {
     el.textContent = 'Not connected — data saved to browser only';
     el.className = 'help';
-    con.textContent = 'Connect Excel file';
+    inp.hidden = false;
     con.hidden = false;
     dis.hidden = true;
-    con._pendingHandle = null;
   }
 }
 
-async function activateHandle(handle) {
-  const perm = await handle.requestPermission({ mode: 'readwrite' });
-  if (perm !== 'granted') throw new Error('Permission denied');
-  xlsxHandle = handle;
-  await IDB.set('xlsxHandle', handle);
-  const entries = await readFromXlsx();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); // sync cache, skip xlsx write
-  setXlsxStatus('ok', handle.name);
-  renderHistory();
-  renderStats();
-  const today = loadAll().find(e => e.date === todayISO());
-  if (today) populateForm(today);
-  showToast('Connected: ' + handle.name);
-}
-
-async function initExcel() {
-  if (!window.showOpenFilePicker) { setXlsxStatus(null); return; }
+async function initGitHub() {
+  const token = localStorage.getItem(GH_TOKEN_KEY);
+  if (!token) { setGhStatus(null); return; }
   try {
-    const handle = await IDB.get('xlsxHandle');
-    if (!handle) { setXlsxStatus(null); return; }
-    const perm = await handle.queryPermission({ mode: 'readwrite' });
-    if (perm === 'granted') {
-      xlsxHandle = handle;
-      const entries = await readFromXlsx();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-      setXlsxStatus('ok', handle.name);
-    } else {
-      setXlsxStatus('pending', handle.name);
-      $('#excel-connect')._pendingHandle = handle;
-    }
+    ghToken = token;
+    const entries = await fetchXlsxFromGH();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    setGhStatus('ok');
   } catch (e) {
-    setXlsxStatus(null);
+    ghToken = null;
+    setGhStatus(null);
   }
 }
 
 function initExcelUI() {
   $('#excel-connect').addEventListener('click', async () => {
-    const btn = $('#excel-connect');
+    const token = $('#gh-token-input').value.trim();
+    if (!token) { showToast('Paste your GitHub token first'); return; }
     try {
-      if (btn._pendingHandle) {
-        await activateHandle(btn._pendingHandle);
-        btn._pendingHandle = null;
-      } else {
-        if (!window.showOpenFilePicker) {
-          alert('Direct file access requires Chrome or Edge.');
-          return;
-        }
-        const [handle] = await window.showOpenFilePicker({
-          types: [{ description: 'Excel', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }]
-        });
-        await activateHandle(handle);
-      }
+      ghToken = token;
+      const entries = await fetchXlsxFromGH();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      localStorage.setItem(GH_TOKEN_KEY, token);
+      setGhStatus('ok');
+      renderHistory();
+      renderStats();
+      const today = loadAll().find(e => e.date === todayISO());
+      if (today) populateForm(today);
+      showToast('Connected to GitHub');
     } catch (e) {
-      if (e.name !== 'AbortError') showToast('Error: ' + e.message);
+      ghToken = null;
+      showToast('Failed: ' + e.message);
     }
   });
 
-  $('#excel-disconnect').addEventListener('click', async () => {
-    xlsxHandle = null;
-    await IDB.del('xlsxHandle');
-    setXlsxStatus(null);
-    showToast('Disconnected from Excel');
+  $('#excel-disconnect').addEventListener('click', () => {
+    ghToken = null;
+    ghFileSha = null;
+    localStorage.removeItem(GH_TOKEN_KEY);
+    setGhStatus(null);
+    $('#gh-token-input').value = '';
+    showToast('Disconnected from GitHub');
   });
 }
 
@@ -861,7 +828,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initMealCollapse();
   initVitalCollapse();
   initExcelUI();
-  await initExcel(); // reads xlsx into localStorage cache before form loads
+  await initGitHub(); // reads xlsx from GitHub into localStorage cache before form loads
   initForm();
   initData();
 });

@@ -280,13 +280,19 @@
 <!-- ============== DATA TAB ============== -->
 <section id="tab-data" class="tab-panel">
   <div class="card">
-    <h2>Excel database</h2>
-    <p class="help">Connect your <code>.xlsx</code> file and every save will write directly to it. Requires Chrome or Edge. Data is also cached in the browser so the app works offline.</p>
+    <h2>GitHub sync</h2>
+    <p class="help">Paste a GitHub Personal Access Token with <code>Contents: Read &amp; Write</code> access. Every save commits <code>Health_Tracker.xlsx</code> directly to the repo.</p>
     <p id="excel-status" class="help">Not connected — data saved to browser only</p>
+    <div id="gh-token-row">
+      <div class="input-row" style="margin-bottom:12px">
+        <input type="password" id="gh-token-input" placeholder="github_pat_…" autocomplete="off" />
+      </div>
+    </div>
     <div class="data-actions">
-      <button class="btn-primary" id="excel-connect">Connect Excel file</button>
+      <button class="btn-primary" id="excel-connect">Connect</button>
       <button class="btn-secondary" id="excel-disconnect" hidden>Disconnect</button>
     </div>
+    <p class="help" style="margin-top:10px">Create a token at <strong>github.com → Settings → Developer settings → Personal access tokens → Fine-grained</strong>. Scope: this repo, Contents read &amp; write.</p>
   </div>
 
   <div class="card">
